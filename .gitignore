@@ -17,7 +17,6 @@ PUBLISH.md
 REPO_README.md
 build_release.py
 update_script.py
-tests/
 *.zip
 sync_readme.py
 update_md.py
