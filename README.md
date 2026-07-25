@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <img alt="license" src="https://img.shields.io/badge/license-Apache--2.0-blue">
+  <img alt="license" src="https://img.shields.io/badge/license-BSL%201.1-blue">
   <img alt="docker" src="https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white">
   <img alt="clouds" src="https://img.shields.io/badge/clouds-AWS%20%7C%20Azure%20%7C%20GCP-orange">
   <img alt="offline" src="https://img.shields.io/badge/network-air--gapped-10b981">
@@ -120,6 +120,9 @@ python3 tests/test_iam_engine.py    # + test_multicloud / test_store / test_mcp 
 
 ## License
 
-Apache-2.0 (or your choice). See `LICENSE`.
+**Business Source License 1.1** (see [`LICENSE`](LICENSE)). Source is open; **Community use
+is free** (single user / evaluation). Team, CI/CD, and organization-wide **production use
+requires a commercial subscription** — contact **krisprogrammer1@gmail.com**. Converts to
+Apache-2.0 on 2030-07-25. You may not resell it or offer it as a competing hosted service.
 
 <p align="center"><i>⭐ If this is useful, star the repo — it helps a lot.</i></p>
