@@ -31,6 +31,14 @@ from providers import analyze_policy
 import remediation
 import terraform_extract
 
+# Force UTF-8 output so emoji/markdown never crash on Windows consoles or CI runners
+# whose default encoding is cp1252/ascii (a real failure mode for GitHub Actions on Windows).
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except Exception:
+        pass
+
 RANK = {s.value: s.rank for s in Severity}
 
 

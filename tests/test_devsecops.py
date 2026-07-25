@@ -71,7 +71,7 @@ class TestTerraformExtract(unittest.TestCase):
 class TestGuardrailsGate(unittest.TestCase):
     def _run(self, args):
         return subprocess.run([sys.executable, os.path.join(ROOT, "guardrails.py"), *args],
-                              capture_output=True, text=True, cwd=ROOT)
+                              capture_output=True, text=True, encoding="utf-8", cwd=ROOT)
 
     def test_vulnerable_policy_fails_build(self):
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
@@ -112,7 +112,7 @@ class TestGuardrailsGate(unittest.TestCase):
         self.assertIn("IAM Sentinel Guardrails Audit Report", r.stdout)
         self.assertIn("| Status | Provider | Policy / Resource |", r.stdout)
         self.assertTrue(os.path.exists(comment_file))
-        with open(comment_file, "r") as cf:
+        with open(comment_file, "r", encoding="utf-8") as cf:
             self.assertIn("IAM Sentinel Guardrails Audit Report", cf.read())
         os.remove(comment_file)
 
