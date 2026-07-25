@@ -16,10 +16,11 @@ services:
       - OLLAMA_BASE_URL=http://cyber-brain:11434
     volumes:
       - sentinel_data:/app/data      # persistent audit trail + findings DB
+      - ./certs:/app/certs           # TLS certificates
     security_opt:
       - no-new-privileges:true
     healthcheck:
-      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/readyz || exit 1"]
+      test: ["CMD-SHELL", "curl -fsSk https://localhost:8080/api/readyz || curl -fsS http://localhost:8080/api/readyz || exit 1"]
       interval: 30s
       timeout: 5s
       retries: 3
