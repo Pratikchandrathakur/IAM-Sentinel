@@ -700,14 +700,32 @@
       if (!badge) return;
 
       try {
-        const resp = await fetch('/api/license', {
+        let licData = null;
+        let resp = await fetch('/api/license', {
           headers: apiKey ? { 'X-API-Key': apiKey } : {}
         });
         if (resp.ok) {
-          const lic = await resp.json();
-          const plan = (lic.plan || 'community').toLowerCase();
-          const seatsDisp = lic.seats_display || lic.seats || 1;
-          const scansDisp = lic.scans_display || lic.max_scans_per_month || 100;
+          licData = await resp.json();
+        } else {
+          let healthResp = await fetch('/api/health');
+          if (healthResp.ok) {
+            let healthData = await healthResp.json();
+            if (healthData.license && healthData.license.info) {
+              let info = healthData.license.info;
+              licData = {
+                plan: (info.tier || 'community').toLowerCase(),
+                seats_display: info.seats === 0 ? 'unlimited' : info.seats,
+                scans_display: info.scans_per_month === 0 ? 'unlimited' : info.scans_per_month,
+                customer: info.customer || 'Community'
+              };
+            }
+          }
+        }
+
+        if (licData) {
+          const plan = (licData.plan || 'community').toLowerCase();
+          const seatsDisp = licData.seats_display || licData.seats || 1;
+          const scansDisp = licData.scans_display || licData.max_scans_per_month || 100;
 
           if (plan === 'enterprise') {
             badge.innerHTML = '👑 Enterprise';

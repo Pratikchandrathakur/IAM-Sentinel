@@ -32,6 +32,11 @@ ESC_ROLES = {
     "roles/iam.serviceAccountKeyAdmin": "Create service-account keys (persistent impersonation)",
     "roles/iam.roleAdmin": "Create/modify custom roles to grant more access",
     "roles/resourcemanager.projectIamAdmin": "Set project IAM policy (grant any role)",
+    "roles/compute.admin": "Full control over Compute Engine instances (SSH key injection escalation)",
+    "roles/cloudfunctions.developer": "Deploy Cloud Functions executing as privileged service accounts",
+    "roles/cloudbuild.builds.editor": "Submit Cloud Builds executing as privileged build service account",
+    "roles/workflows.editor": "Execute Workflows executing as privileged service accounts",
+    "roles/secretmanager.secretAccessor": "Access secret payloads across Secret Manager",
     "roles/owner": "Owner (setIamPolicy + everything)",
 }
 
@@ -44,6 +49,10 @@ ESC_PERMISSIONS = {
     "iam.serviceAccountKeys.create": "Create service-account keys (persistence)",
     "iam.roles.update": "Modify custom roles to add permissions",
     "iam.roles.create": "Create custom roles",
+    "compute.instances.setMetadata": "Set instance metadata (SSH key injection escalation)",
+    "compute.projects.setCommonInstanceMetadata": "Inject project-wide SSH keys across all VMs",
+    "secretmanager.versions.access": "Read secret payload values",
+    "cloudbuild.builds.create": "Submit custom build workloads executing as build service account",
 }
 
 PUBLIC_MEMBERS = {"allusers": "allUsers", "allauthenticatedusers": "allAuthenticatedUsers"}

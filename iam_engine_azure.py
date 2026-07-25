@@ -117,6 +117,18 @@ def analyze_azure_role(policy: dict, target: str = "azure role") -> ScanResult:
          "Assign a managed identity to compute (identity abuse, PassRole-like)"),
         ("AZ.ESC_DEPLOYMENTS_WRITE", "Microsoft.Resources/deployments/write",
          "Deploy ARM templates that run as a privileged identity"),
+        ("AZ.ESC_AUTOMATION_RUNBOOK", "Microsoft.Automation/automationAccounts/runbooks/write",
+         "Create or modify automation runbooks executing as privileged identity"),
+        ("AZ.ESC_COMPUTE_RUN_COMMAND", "Microsoft.Compute/virtualMachines/runCommand/action",
+         "Execute arbitrary shell commands inside Azure VMs as root/SYSTEM"),
+        ("AZ.ESC_LOGIC_APP_TRIGGER", "Microsoft.Logic/workflows/triggers/listCallbackUrl/action",
+         "Trigger Logic Apps executing as managed identities"),
+        ("AZ.ESC_CONTAINER_EXEC", "Microsoft.ContainerInstance/containerGroups/exec/action",
+         "Execute shell commands inside container instances as root"),
+        ("AZ.ESC_KEYVAULT_SECRETS", "Microsoft.KeyVault/vaults/secrets/read",
+         "Read sensitive secrets and passwords stored in KeyVault"),
+        ("AZ.ESC_WEB_APP_CONFIG", "Microsoft.Web/sites/config/list/action",
+         "Extract App Service connection strings and application secrets"),
     ]
     for rule_id, action, name in esc:
         if _matches(all_actions, action):
