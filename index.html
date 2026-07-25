@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>IAM Sentinel — Enterprise IAM Privilege-Escalation Auditor</title>
+  <style>
+    :root {
+      --bg: #020617;
+      --surface: #0f172a;
+      --surface-card: #1e293b;
+      --border: #334155;
+      --border-glow: #6366f1;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --critical: #ef4444;
+      --critical-bg: rgba(239, 68, 68, 0.12);
+      --high: #f97316;
+      --high-bg: rgba(249, 115, 22, 0.12);
+      --medium: #eab308;
+      --medium-bg: rgba(234, 179, 8, 0.12);
+      --success: #10b981;
+      --success-bg: rgba(16, 185, 129, 0.12);
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      --font-mono: "JetBrains Mono", Consolas, Monaco, monospace;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      background-image: 
+        radial-gradient(circle at 10% 10%, rgba(99, 102, 241, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.05) 0%, transparent 40%);
+    }
+
+    header {
+      border-bottom: 1px solid var(--border);
+      backdrop-filter: blur(16px);
+      background: rgba(15, 23, 42, 0.85);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.85rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand-icon {
+      width: 32px;
+      height: 32px;
+      background: linear-gradient(135deg, var(--primary), #3b82f6);
+      border-radius: 0.5rem;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 0 15px rgba(99, 102, 241, 0.3);
+    }
+
+    .badge-pill {
+      font-size: 0.72rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 9999px;
+      font-weight: 600;
+      background: rgba(99, 102, 241, 0.15);
+      color: #818cf8;
+      border: 1px solid rgba(99, 102, 241, 0.3);
+    }
+
+    .status-led {
+      display: inline-block;
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      box-shadow: 0 0 8px var(--success);
+      margin-right: 0.4rem;
+    }
+
+    .nav-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .btn-nav {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.45rem 0.85rem;
+      border-radius: 0.5rem;
+      font-size: 0.83rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    .btn-nav:hover {
+      background: rgba(255, 255, 255, 0.08);
+      color: var(--text);
+      border-color: var(--border-glow);
+    }
+
+    .key-input {
+      background: #090d16;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.45rem 0.8rem;
+      border-radius: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: 0.82rem;
+      width: 210px;
+    }
+    .key-input:focus { outline: none; border-color: var(--border-glow); }
+
+    main {
+      flex: 1;
+      max-width: 1400px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.75rem;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.75rem;
+    }
+
+    @media (max-width: 1024px) { main { grid-template-columns: 1fr; } }
+
+    .panel {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      padding: 1.35rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .panel-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .preset-group {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+
+    .btn-preset {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      color: var(--text-muted);
+      padding: 0.3rem 0.6rem;
+      border-radius: 0.375rem;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 0.3rem;
+    }
+    .btn-preset:hover { background: rgba(255, 255, 255, 0.09); color: var(--text); }
+
+    textarea {
+      width: 100%;
+      height: 400px;
+      background: #020617;
+      border: 1px solid var(--border);
+      border-radius: 0.6rem;
+      color: #e2e8f0;
+      font-family: var(--font-mono);
+      font-size: 0.86rem;
+      padding: 1rem;
+      resize: vertical;
+      line-height: 1.5;
+    }
+    textarea:focus { outline: none; border-color: var(--border-glow); }
+
+    .control-row {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+    }
+
+    select, input[type="text"] {
+      background: #020617;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 0.6rem 0.85rem;
+      border-radius: 0.5rem;
+      font-size: 0.88rem;
+    }
+    select:focus, input[type="text"]:focus { outline: none; border-color: var(--border-glow); }
+
+    .btn-primary {
+      background: var(--primary);
+      color: white;
+      font-weight: 600;
+      padding: 0.65rem 1.4rem;
+      border-radius: 0.5rem;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      font-size: 0.95rem;
+      transition: background 0.2s, transform 0.1s;
+    }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+
+    .result-empty {
+      height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      gap: 0.85rem;
+      text-align: center;
+      padding: 3rem 1rem;
+    }
+
+    .risk-banner {
+      padding: 1.15rem 1.35rem;
+      border-radius: 0.65rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .sev-CRITICAL { background: var(--critical-bg); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; }
+    .sev-HIGH { background: var(--high-bg); border: 1px solid rgba(249, 115, 22, 0.4); color: #fdba74; }
+    .sev-MEDIUM { background: var(--medium-bg); border: 1px solid rgba(234, 179, 8, 0.4); color: #fde047; }
+    .sev-CLEAN { background: var(--success-bg); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7; }
+
+    .risk-title { font-size: 1.25rem; font-weight: 700; }
+
+    .provenance-card {
+      background: #020617;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.75rem 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      display: flex;
+      flex-direction: column;
+      gap: 0.3rem;
+    }
+
+    .findings-scroll {
+      display: flex;
+      flex-direction: column;
+      gap: 0.85rem;
+      max-height: 420px;
+      overflow-y: auto;
+    }
+
+    .finding-item {
+      background: #020617;
+      border: 1px solid var(--border);
+      border-left: 4px solid var(--primary);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .finding-item.sev-CRITICAL { border-left-color: var(--critical); }
+    .finding-item.sev-HIGH { border-left-color: var(--high); }
+    .finding-item.sev-MEDIUM { border-left-color: var(--medium); }
+
+    .finding-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .rule-tag {
+      font-family: var(--font-mono);
+      font-weight: 700;
+      color: #818cf8;
+      font-size: 0.85rem;
+    }
+
+    .sev-tag {
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 0.15rem 0.5rem;
+      border-radius: 0.25rem;
+      text-transform: uppercase;
+    }
+    .sev-tag.CRITICAL { background: var(--critical-bg); color: var(--critical); }
+    .sev-tag.HIGH { background: var(--high-bg); color: var(--high); }
+    .sev-tag.MEDIUM { background: var(--medium-bg); color: var(--medium); }
+
+    .finding-desc { font-size: 0.85rem; color: var(--text-muted); line-height: 1.45; }
+
+    .remediation-box {
+      font-size: 0.82rem;
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.2);
+      color: #6ee7b7;
+      padding: 0.6rem 0.8rem;
+      border-radius: 0.375rem;
+    }
+
+    /* Modal Overlay */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(2, 6, 23, 0.82);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1.5rem;
+    }
+
+    .modal-content {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 0.85rem;
+      max-width: 850px;
+      width: 100%;
+      max-height: 88vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6);
+      overflow: hidden;
+    }
+
+    .modal-top {
+      padding: 1.15rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-size: 1.4rem;
+      cursor: pointer;
+      padding: 0.2rem 0.5rem;
+      border-radius: 0.25rem;
+    }
+    .modal-close-btn:hover { color: var(--text); background: rgba(255,255,255,0.08); }
+
+    .modal-main {
+      padding: 1.5rem;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 1.15rem;
+    }
+
+    .code-snippet {
+      background: #020617;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 1rem;
+      font-family: var(--font-mono);
+      font-size: 0.84rem;
+      color: #a5b4fc;
+      white-space: pre-wrap;
+      position: relative;
+    }
+
+    .btn-copy-code {
+      position: absolute;
+      top: 0.65rem;
+      right: 0.65rem;
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 0.35rem 0.75rem;
+      border-radius: 0.35rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-copy-code:hover { background: var(--primary-hover); }
+
+    .rule-card-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 0.85rem;
+    }
+
+    .rule-tile {
+      background: #020617;
+      border: 1px solid var(--border);
+      border-radius: 0.5rem;
+      padding: 0.85rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    footer {
+      border-top: 1px solid var(--border);
+      padding: 0.85rem;
+      text-align: center;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="brand">
+      <div class="brand-icon">
+        <svg width="18" height="18" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
+      </div>
+      IAM Sentinel
+      <span class="badge-pill">v1.0.0 Enterprise</span>
+    </div>
+
+    <div class="nav-actions">
+      <span style="font-size: 0.8rem; color: var(--text-muted); margin-right: 0.5rem;">
+        <span class="status-led"></span>AIR-GAPPED
+      </span>
+      <a href="/pricing" class="btn-nav">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M7 7h10v10H7z"></path><path d="M12 2v20M2 12h20"></path></svg>
+        Pricing & Commercial
+      </a>
+      <button class="btn-nav" onclick="openMcpModal()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"></path><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"></path></svg>
+        IDE MCP Setup
+      </button>
+      <button class="btn-nav" onclick="openRulesModal()">
+        <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h7"></path></svg>
+        Rules Catalog
+      </button>
+      <input type="text" id="apiKey" class="key-input" placeholder="API Key" value="CHANGE_ME_32+_char_random_secret" />
+    </div>
+  </header>
+
+  <main>
+    <!-- Left: Policy Specification & Controls -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path></svg>
+          Policy Specification
+        </div>
+        <div class="preset-group">
+          <button class="btn-preset" onclick="loadPreset('aws_pass')">AWS PassRole</button>
+          <button class="btn-preset" onclick="loadPreset('aws_admin')">AWS Admin</button>
+          <button class="btn-preset" onclick="loadPreset('azure_role')">Azure RBAC</button>
+          <button class="btn-preset" onclick="loadPreset('gcp_iam')">GCP IAM</button>
+          <button class="btn-preset" onclick="loadPreset('clean')">Clean</button>
+        </div>
+      </div>
+
+      <textarea id="policyInput" spellcheck="false" placeholder="Paste AWS, Azure, or GCP IAM policy JSON here..."></textarea>
+
+      <div class="control-row">
+        <select id="providerSelect">
+          <option value="auto">⚡ Auto-Detect Cloud</option>
+          <option value="aws">☁️ AWS IAM</option>
+          <option value="azure">🔷 Azure RBAC</option>
+          <option value="gcp">🌐 GCP IAM</option>
+        </select>
+        <input type="text" id="targetInput" style="flex:1;" placeholder="Target name (e.g. prod-app-role)" value="prod-role" />
+        <button class="btn-primary" onclick="runAudit()">
+          <svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"></path></svg>
+          Audit Policy
+        </button>
+      </div>
+    </div>
+
+    <!-- Right: Findings & Provenance Panel -->
+    <div class="panel">
+      <div class="result-empty" id="emptyState">
+        <svg width="42" height="42" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path d="M12 9v3.75m0 -10.05a9 9 0 1 0 0 18 9 9 0 0 0 0 -18wM12 15.75h.007v.008H12v-.008z"></path></svg>
+        <p>Select a preset or paste an IAM policy to execute a deterministic privilege-escalation audit.</p>
+      </div>
+
+      <div id="auditResults" style="display: none; flex-direction: column; gap: 1.15rem;">
+        <div class="risk-banner" id="riskHeader">
+          <div>
+            <div class="risk-title" id="riskTitle">CRITICAL FINDINGS</div>
+            <div style="font-size: 0.82rem;" id="riskSub">Deterministic Ground-Truth Analysis</div>
+          </div>
+          <div style="font-size: 1.6rem; font-weight: 700;" id="findingCount">0</div>
+        </div>
+
+        <div class="provenance-card" id="provenanceBox"></div>
+        <div class="findings-scroll" id="findingsList"></div>
+      </div>
+    </div>
+  </main>
+
+  <!-- IDE MCP Setup Modal -->
+  <div class="modal-backdrop" id="mcpModal">
+    <div class="modal-content">
+      <div class="modal-top">
+        <div style="font-weight: 700; font-size: 1.1rem; display: flex; align-items: center; gap: 0.5rem;">
+          🔌 Cursor / Claude Code IDE Integration (MCP)
+        </div>
+        <button class="modal-close-btn" onclick="closeMcpModal()">&times;</button>
+      </div>
+      <div class="modal-main">
+        <p style="font-size: 0.88rem; color: var(--text-muted); line-height: 1.5;">
+          IAM Sentinel includes a native <strong>stdio JSON-RPC 2.0 MCP Server</strong> (<code>mcp_stdio.py</code>). Add this configuration snippet to your editor's MCP server config file to audit IAM policies inline in your IDE.
+        </p>
+        <div style="position: relative;">
+          <button class="btn-copy-code" id="copyMcpBtn" onclick="copyMcpConfig()">📋 Copy MCP Config</button>
+          <div class="code-snippet" id="mcpSnippet"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Rules Catalog Modal -->
+  <div class="modal-backdrop" id="rulesModal">
+    <div class="modal-content" style="max-width: 950px;">
+      <div class="modal-top">
+        <div style="font-weight: 700; font-size: 1.1rem;">
+          📜 Multi-Cloud Rules Catalog (<span id="rulesCount">23</span> Primitives)
+        </div>
+        <button class="modal-close-btn" onclick="closeRulesModal()">&times;</button>
+      </div>
+      <div class="modal-main">
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <input type="text" id="ruleSearch" style="flex:1;" placeholder="🔍 Filter AWS, Azure, GCP rules..." oninput="filterRules()" />
+          <span class="badge-pill" id="rulesetBadge">iam-2026.07</span>
+        </div>
+        <div class="rule-card-grid" id="ruleGrid"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    IAM Sentinel — Air-gapped, zero-telemetry AWS, Azure & GCP IAM Privilege Escalation Auditor
+  </footer>
+
+  <script>
+    const PRESETS = {
+      aws_pass: { Statement: [{ Effect: "Allow", Action: ["iam:PassRole", "ec2:RunInstances"], Resource: "*" }] },
+      aws_admin: { Statement: [{ Effect: "Allow", Action: "iam:AttachUserPolicy", Resource: "*" }] },
+      azure_role: { permissions: [{ allowedActions: ["Microsoft.Authorization/roleAssignments/write"] }] },
+      gcp_iam: { bindings: [{ role: "resourcemanager.projects.setIamPolicy", members: ["user:attacker@example.com"] }] },
+      clean: { Statement: [{ Effect: "Allow", Action: "s3:GetObject", Resource: "arn:aws:s3:::production-logs/*" }] }
+    };
+
+    let cachedRules = [];
+
+    function loadPreset(key) {
+      document.getElementById('policyInput').value = JSON.stringify(PRESETS[key], null, 2);
+    }
+    loadPreset('aws_pass');
+
+    function openMcpModal() {
+      const configObj = {
+        mcpServers: {
+          "iam-sentinel": {
+            command: "python3",
+            args: ["/home/test/Complete_CyberBox/iam-sentinel/mcp_stdio.py"],
+            env: { AUTH_ENABLED: "false", LLM_NARRATIVE_ENABLED: "false" }
+          }
+        }
+      };
+      document.getElementById('mcpSnippet').innerText = JSON.stringify(configObj, null, 2);
+      document.getElementById('mcpModal').style.display = 'flex';
+    }
+
+    function closeMcpModal() { document.getElementById('mcpModal').style.display = 'none'; }
+
+    function copyMcpConfig() {
+      const code = document.getElementById('mcpSnippet').innerText;
+      navigator.clipboard.writeText(code);
+      const btn = document.getElementById('copyMcpBtn');
+      btn.innerText = '✅ Copied!';
+      setTimeout(() => { btn.innerText = '📋 Copy MCP Config'; }, 2000);
+    }
+
+    async function openRulesModal() {
+      document.getElementById('rulesModal').style.display = 'flex';
+      if (cachedRules.length === 0) { await fetchRules(); }
+    }
+
+    function closeRulesModal() { document.getElementById('rulesModal').style.display = 'none'; }
+
+    async function fetchRules() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      try {
+        const resp = await fetch('/api/rules', { headers: { 'X-API-Key': apiKey } });
+        const data = await resp.json();
+        if (resp.ok) {
+          cachedRules = data.escalation_primitives || [];
+          document.getElementById('rulesetBadge').innerText = data.ruleset_version || 'iam-2026.07';
+          document.getElementById('rulesCount').innerText = cachedRules.length;
+          renderRules(cachedRules);
+        } else {
+          document.getElementById('ruleGrid').innerHTML = `<div style="color: var(--critical);">Error loading rules: ${data.detail}</div>`;
+        }
+      } catch (err) {
+        document.getElementById('ruleGrid').innerHTML = `<div style="color: var(--critical);">Network error: ${err.message}</div>`;
+      }
+    }
+
+    function renderRules(rules) {
+      const grid = document.getElementById('ruleGrid');
+      grid.innerHTML = '';
+      rules.forEach(r => {
+        const card = document.createElement('div');
+        card.className = 'rule-tile';
+        const pBadge = r.provider ? `<span class="badge-pill" style="font-size:0.65rem;">${r.provider.toUpperCase()}</span>` : '';
+        card.innerHTML = `
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="rule-tag">${r.id}</span> ${pBadge}
+          </div>
+          <div style="font-weight:600; font-size:0.88rem;">${r.name}</div>
+          <div style="font-family:var(--font-mono); font-size:0.75rem; color:var(--text-muted); background:rgba(255,255,255,0.03); padding:0.3rem 0.5rem; border-radius:0.25rem;">
+            Actions: ${r.actions.join(', ')}
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    function filterRules() {
+      const q = document.getElementById('ruleSearch').value.toLowerCase();
+      const filtered = cachedRules.filter(r => 
+        r.id.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || r.actions.some(a => a.toLowerCase().includes(q))
+      );
+      renderRules(filtered);
+    }
+
+    async function runAudit() {
+      const policyStr = document.getElementById('policyInput').value.trim();
+      const target = document.getElementById('targetInput').value.trim() || 'pasted-policy';
+      const provider = document.getElementById('providerSelect').value;
+      const apiKey = document.getElementById('apiKey').value.trim();
+
+      if (!policyStr) { alert('Please enter a policy JSON.'); return; }
+
+      try {
+        const resp = await fetch('/api/audit/iam', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'X-API-Key': apiKey },
+          body: JSON.stringify({ policy_json: policyStr, target: target, provider: provider })
+        });
+
+        const data = await resp.json();
+        if (!resp.ok) { alert('Audit error: ' + (data.detail || JSON.stringify(data))); return; }
+        renderResults(data);
+      } catch (err) {
+        alert('Network or Server error: ' + err.message);
+      }
+    }
+
+    function renderResults(data) {
+      document.getElementById('emptyState').style.display = 'none';
+      const container = document.getElementById('auditResults');
+      container.style.display = 'flex';
+
+      const scan = data.scan;
+      const findings = scan.findings || [];
+      const highest = scan.highest_severity || 'CLEAN';
+
+      const header = document.getElementById('riskHeader');
+      header.className = 'risk-banner sev-' + highest;
+      document.getElementById('riskTitle').innerText = highest === 'CLEAN' ? '✅ PASS — SAFE POLICY' : highest + ' SEVERITY DETECTED';
+      document.getElementById('riskSub').innerText = `Target: ${scan.target} · ${findings.length} finding(s)`;
+      document.getElementById('findingCount').innerText = findings.length;
+
+      document.getElementById('provenanceBox').innerHTML = `
+        <div><strong>Scan ID:</strong> #${data.scan_id} | <strong>Rule Pack:</strong> ${scan.ruleset_version}</div>
+        <div><strong>SHA-256 Digest:</strong> ${scan.artifact_sha256}</div>
+        <div><strong>Scanned At:</strong> ${scan.scanned_at}</div>
+      `;
+
+      const list = document.getElementById('findingsList');
+      list.innerHTML = '';
+
+      if (findings.length === 0) {
+        list.innerHTML = `
+          <div style="text-align: center; padding: 2rem; color: var(--success); font-weight: 500;">
+            No privilege-escalation primitives or wildcard vulnerabilities detected in this policy specification.
+          </div>
+        `;
+        return;
+      }
+
+      findings.forEach(f => {
+        const card = document.createElement('div');
+        card.className = `finding-item sev-${f.severity}`;
+        card.innerHTML = `
+          <div class="finding-header">
+            <span class="rule-tag">${f.rule_id}</span>
+            <span class="sev-tag ${f.severity}">${f.severity}</span>
+          </div>
+          <div style="font-weight: 600; font-size: 0.95rem;">${f.title}</div>
+          <div class="finding-desc">${f.description}</div>
+          <div style="font-size: 0.78rem; font-family: var(--font-mono); color: var(--text-muted);">
+            Location: ${f.location} | Evidence: ${f.evidence}
+          </div>
+          <div class="remediation-box">💡 <strong>Remediation:</strong> ${f.remediation_hint}</div>
+        `;
+        list.appendChild(card);
+      });
+    }
+  </script>
+</body>
+</html>

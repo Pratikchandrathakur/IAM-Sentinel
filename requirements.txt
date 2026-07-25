@@ -1,0 +1,9 @@
+# IAM Sentinel — minimal deps. The deterministic engine + store + MCP server are pure
+# stdlib; these are only for the HTTP API and the optional vLLM narrative backend.
+fastapi>=0.110.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.0.0
+requests>=2.28.0
+openai>=1.0.0
+# Ed25519 license signatures + RS256 JWT (SSO) verification. HS256 JWT needs no extra deps.
+cryptography>=42.0.0

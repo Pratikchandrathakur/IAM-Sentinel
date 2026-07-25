@@ -1,0 +1,49 @@
+services:
+  # The deterministic auditor. CPU-only, no GPU required.
+  iam-sentinel:
+    build: .
+    container_name: iam-sentinel
+    ports:
+      - "127.0.0.1:8080:8080"
+    env_file:
+      - .env
+    environment:
+      - SERVER_PORT=8080
+      - SERVER_HOST=0.0.0.0
+      - DATA_DIR=/app/data
+      # Point at the optional narrative backend below; or set LLM_NARRATIVE_ENABLED=false
+      # in .env for a fully model-free, deterministic-only deployment.
+      - OLLAMA_BASE_URL=http://cyber-brain:11434
+    volumes:
+      - sentinel_data:/app/data      # persistent audit trail + findings DB
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/api/readyz || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+    restart: unless-stopped
+
+  # OPTIONAL: local LLM for the remediation narrative. Comment this out (and set
+  # LLM_NARRATIVE_ENABLED=false) for a pure deterministic install with no model.
+  cyber-brain:
+    image: ollama/ollama:latest
+    container_name: cyber-brain
+    expose:
+      - "11434"
+    volumes:
+      - ollama_data:/root/.ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+volumes:
+  sentinel_data:
+  ollama_data:

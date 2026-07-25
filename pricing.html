@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>IAM Sentinel — Air-gapped cloud IAM privilege-escalation scanner</title>
+<meta name="description" content="Deterministic, on-prem AWS/Azure/GCP IAM privilege-escalation auditing with native IDE (MCP) integration. Runs fully offline — zero data egress.">
+<meta property="og:title" content="IAM Sentinel — air-gapped cloud IAM scanner">
+<meta property="og:description" content="Deterministic AWS/Azure/GCP IAM privilege-escalation auditing on your own metal. MCP for Cursor & Claude Code.">
+<meta property="og:type" content="website">
+<style>
+  /* === EDIT: replace YOUR-USERNAME and you@example.com below, then deploy === */
+  :root{
+    --bg:#050914; --bg2:#020617; --panel:#0e1626; --panel2:#161f33; --ink:#f1f5fb;
+    --muted:#93a4be; --line:#243149; --brand:#6d7dff; --brand2:#8b5cf6; --accent:#10e0a0;
+    --r:14px; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  [id]{scroll-margin-top:84px}
+  body{background:var(--bg);color:var(--ink);line-height:1.6;overflow-x:hidden}
+  a{color:var(--brand);text-decoration:none}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px;position:relative;z-index:1}
+
+  /* animated backdrop */
+  .bg-orbs{position:fixed;inset:0;z-index:0;overflow:hidden;pointer-events:none}
+  .orb{position:absolute;border-radius:50%;filter:blur(90px);opacity:.5;animation:float 18s ease-in-out infinite}
+  .orb.a{width:520px;height:520px;background:#3b2c8f;top:-160px;right:-80px}
+  .orb.b{width:460px;height:460px;background:#0e5c48;bottom:-160px;left:-120px;animation-delay:-6s}
+  .orb.c{width:360px;height:360px;background:#5b2a7a;top:40%;left:55%;animation-delay:-11s}
+  @keyframes float{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(30px,-40px) scale(1.08)}}
+  .grid-bg{position:fixed;inset:0;z-index:0;background-image:linear-gradient(rgba(255,255,255,.03) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.03) 1px,transparent 1px);background-size:44px 44px;mask-image:radial-gradient(circle at 50% 0,#000,transparent 70%)}
+
+  header{position:sticky;top:0;z-index:20;backdrop-filter:blur(12px);background:rgba(5,9,20,.72);border-bottom:1px solid var(--line)}
+  .navbar{display:flex;align-items:center;justify-content:space-between;padding:14px 0;gap:12px;flex-wrap:wrap}
+  .logo{display:flex;align-items:center;gap:11px;font-weight:800;font-size:1.15rem;letter-spacing:-.01em}
+  .logo-mark{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--brand),var(--accent));display:grid;place-items:center;box-shadow:0 6px 18px rgba(109,125,255,.35)}
+  .nav a{color:var(--muted);margin-left:22px;font-size:.9rem;font-weight:600;transition:.15s}
+  .nav a:hover{color:var(--ink)}
+  .ghbtn{display:inline-flex;align-items:center;gap:7px;padding:8px 14px;border:1px solid var(--line);border-radius:8px;color:var(--ink);font-size:.85rem;font-weight:700;background:var(--panel2)}
+  .ghbtn:hover{border-color:var(--brand)}
+
+  .hero{text-align:center;padding:82px 0 40px}
+  .tag{display:inline-flex;align-items:center;gap:8px;font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);border:1px solid var(--line);border-radius:999px;padding:7px 15px;margin-bottom:24px;font-weight:700;background:rgba(16,224,160,.06)}
+  .tag .pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 0 rgba(16,224,160,.6);animation:pulse 2s infinite}
+  @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(16,224,160,.5)}70%{box-shadow:0 0 0 8px rgba(16,224,160,0)}100%{box-shadow:0 0 0 0 rgba(16,224,160,0)}}
+  h1{font-size:3.3rem;line-height:1.08;letter-spacing:-.03em;font-weight:850;margin-bottom:20px}
+  h1 .grad{background:linear-gradient(110deg,var(--brand),var(--accent) 90%);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{font-size:1.2rem;color:var(--muted);max-width:730px;margin:0 auto 30px}
+  .cta{display:flex;gap:13px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:9px;padding:14px 24px;border-radius:10px;font-weight:700;font-size:.96rem;border:1px solid var(--line);color:var(--ink);background:var(--panel2);transition:.18s}
+  .btn:hover{transform:translateY(-2px);border-color:var(--brand)}
+  .btn.primary{background:linear-gradient(135deg,var(--brand),var(--brand2));border-color:transparent;color:#fff;box-shadow:0 10px 30px rgba(109,125,255,.32)}
+  .btn.primary:hover{box-shadow:0 14px 38px rgba(109,125,255,.45)}
+
+  /* OS strip */
+  .osstrip{margin:46px 0 8px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .osstrip .cap{font-size:.75rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);font-weight:700}
+  .oslist{display:flex;gap:14px;flex-wrap:wrap;justify-content:center}
+  .os{display:flex;flex-direction:column;align-items:center;gap:9px;width:118px;padding:18px 10px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(180deg,var(--panel),rgba(14,22,38,.4));transition:.18s}
+  .os:hover{transform:translateY(-4px);border-color:var(--brand);box-shadow:0 12px 30px rgba(0,0,0,.4)}
+  .os svg{width:40px;height:40px}
+  .os .name{font-size:.82rem;font-weight:700}
+  .os .note{font-size:.68rem;color:var(--muted)}
+
+  .section{padding:70px 0;border-top:1px solid var(--line);margin-top:60px}
+  .section h2{font-size:2rem;font-weight:850;letter-spacing:-.02em;margin-bottom:10px;text-align:center}
+  .section .lead{color:var(--muted);max-width:620px;margin:0 auto 40px;text-align:center;font-size:1.02rem}
+  .grid{display:grid;gap:20px}
+  .g3{grid-template-columns:repeat(3,1fr)}
+  .card{background:linear-gradient(180deg,var(--panel),rgba(14,22,38,.55));border:1px solid var(--line);border-radius:var(--r);padding:26px;transition:.18s}
+  .card:hover{transform:translateY(-3px);border-color:rgba(109,125,255,.5)}
+  .ci{width:46px;height:46px;border-radius:11px;display:grid;place-items:center;margin-bottom:16px;background:rgba(109,125,255,.12);border:1px solid rgba(109,125,255,.25)}
+  .ci svg{width:24px;height:24px;stroke:var(--brand)}
+  .card h3{font-size:1.1rem;margin-bottom:9px}
+  .card p{color:var(--muted);font-size:.93rem}
+
+  /* terminal */
+  .terminal{max-width:760px;margin:0 auto;border:1px solid var(--line);border-radius:14px;overflow:hidden;background:#0a0f1c;box-shadow:0 26px 60px rgba(0,0,0,.5)}
+  .tbar{display:flex;align-items:center;gap:8px;padding:12px 16px;background:#0d1424;border-bottom:1px solid var(--line)}
+  .tdot{width:12px;height:12px;border-radius:50%}
+  .tdot.r{background:#ff5f57}.tdot.y{background:#febc2e}.tdot.g{background:#28c840}
+  .ttitle{margin-left:10px;font-size:.78rem;color:var(--muted);font-family:ui-monospace,Menlo,Consolas,monospace}
+  .tbody{padding:22px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem;line-height:1.9;color:#cbd5e1;overflow-x:auto}
+  .tbody .n{color:#475569;user-select:none;margin-right:14px}
+  .tbody .cmd{color:#e2e8f0}
+  .tbody .kw{color:#8b9cff}
+  .tbody .c{color:#5b6b86}
+  .tbody .ok{color:var(--accent)}
+  .osnote{max-width:760px;margin:20px auto 0;display:flex;gap:18px;flex-wrap:wrap;justify-content:center;color:var(--muted);font-size:.88rem}
+  .osnote .chip{display:inline-flex;align-items:center;gap:8px;padding:8px 13px;border:1px solid var(--line);border-radius:10px;background:var(--panel)}
+  .osnote .chip svg{width:18px;height:18px}
+  .osnote code{background:#0a0f1c;border:1px solid var(--line);border-radius:5px;padding:1px 6px;color:#a5f3d0;font-size:.82rem}
+
+  .price{grid-template-columns:repeat(3,1fr)}
+  .plan{display:flex;flex-direction:column;position:relative}
+  .plan.pop{border-color:var(--brand);box-shadow:0 0 0 1px var(--brand) inset,0 16px 40px rgba(109,125,255,.2)}
+  .plan .pill{position:absolute;top:-12px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--brand),var(--brand2));color:#fff;font-size:.68rem;font-weight:800;padding:4px 14px;border-radius:999px;letter-spacing:.05em}
+  .plan h3{font-size:1.15rem;margin-bottom:4px}
+  .plan .amt{font-size:2.4rem;font-weight:850;margin:6px 0}
+  .plan .amt small{font-size:.9rem;color:var(--muted);font-weight:500}
+  .plan ul{list-style:none;margin:16px 0 24px;flex:1}
+  .plan li{padding:9px 0;border-bottom:1px dashed var(--line);font-size:.9rem;color:var(--muted);display:flex;gap:9px;align-items:center}
+  .plan li b{color:var(--ink)}
+  .plan li svg{width:15px;height:15px;stroke:var(--accent);flex:none}
+
+  table{width:100%;border-collapse:collapse;font-size:.9rem;border:1px solid var(--line);border-radius:12px;overflow:hidden}
+  th,td{text-align:left;padding:13px 16px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-weight:700;background:rgba(14,22,38,.7)}
+  td:not(:first-child),th:not(:first-child){text-align:center}
+  .yes{color:var(--accent);font-weight:800}
+  .no{color:#475569}
+
+  footer{padding:44px 0;color:var(--muted);font-size:.85rem;border-top:1px solid var(--line);margin-top:60px;text-align:center}
+  @media(max-width:860px){.g3,.price{grid-template-columns:1fr}h1{font-size:2.3rem}.nav{display:none}}
+</style>
+</head>
+<body>
+<div class="grid-bg"></div>
+<div class="bg-orbs"><div class="orb a"></div><div class="orb b"></div><div class="orb c"></div></div>
+
+<!-- ===== reusable OS logos (inline, offline-safe) ===== -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="os-apple" viewBox="0 0 24 24"><path fill="#f5f5f7" d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></symbol>
+  <symbol id="os-windows" viewBox="0 0 24 24"><rect x="2" y="2" width="9" height="9" rx="1" fill="#4cc2ff"/><rect x="13" y="2" width="9" height="9" rx="1" fill="#4cc2ff"/><rect x="2" y="13" width="9" height="9" rx="1" fill="#4cc2ff"/><rect x="13" y="13" width="9" height="9" rx="1" fill="#4cc2ff"/></symbol>
+  <symbol id="os-linux" viewBox="0 0 24 24">
+    <ellipse cx="12" cy="14.3" rx="5.6" ry="7.2" fill="#17181c"/>
+    <ellipse cx="12" cy="7.6" rx="3.9" ry="4.1" fill="#17181c"/>
+    <ellipse cx="12" cy="15.4" rx="3.5" ry="5.4" fill="#fefefe"/>
+    <ellipse cx="10.4" cy="7.1" rx="1.05" ry="1.45" fill="#fff"/>
+    <ellipse cx="13.6" cy="7.1" rx="1.05" ry="1.45" fill="#fff"/>
+    <circle cx="10.6" cy="7.35" r=".5" fill="#111"/>
+    <circle cx="13.4" cy="7.35" r=".5" fill="#111"/>
+    <path d="M10.85 8.7 L13.15 8.7 L12 10.35 Z" fill="#f6ac2d"/>
+    <ellipse cx="9.6" cy="21.6" rx="2" ry="1" fill="#f6ac2d"/>
+    <ellipse cx="14.4" cy="21.6" rx="2" ry="1" fill="#f6ac2d"/>
+  </symbol>
+  <symbol id="os-wsl" viewBox="0 0 48 48">
+    <circle cx="24" cy="24" r="21" fill="none" stroke="#e95420" stroke-width="2.4" stroke-dasharray="7 5"/>
+    <circle cx="24" cy="24" r="4.2" fill="#e95420"/>
+    <g fill="#e95420">
+      <rect x="24" y="22.6" width="17" height="2.8" transform="rotate(0 24 24)"/>
+      <circle cx="41" cy="24" r="4.6"/>
+      <rect x="24" y="22.6" width="17" height="2.8" transform="rotate(131 24 24)"/>
+      <circle cx="12.8" cy="36.8" r="4.6"/>
+      <rect x="24" y="22.6" width="17" height="2.8" transform="rotate(229 24 24)"/>
+      <circle cx="12.8" cy="11.2" r="4.6"/>
+    </g>
+  </symbol>
+</svg>
+
+<header><div class="wrap"><div class="navbar">
+  <div class="logo"><span class="logo-mark"><svg width="19" height="19" fill="none" stroke="#fff" stroke-width="2.1" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></span>IAM Sentinel</div>
+  <nav class="nav"><a href="#features">Features</a><a href="#install">Install</a><a href="#pricing">Pricing</a><a href="#faq">FAQ</a></nav>
+  <a class="ghbtn" href="https://github.com/YOUR-USERNAME/iam-sentinel"><svg width="16" height="16" fill="currentColor" viewBox="0 0 24 24"><path d="M12 .5C5.7.5.5 5.7.5 12c0 5.1 3.3 9.4 7.9 10.9.6.1.8-.2.8-.5v-1.7c-3.2.7-3.9-1.5-3.9-1.5-.5-1.3-1.3-1.7-1.3-1.7-1.1-.7.1-.7.1-.7 1.2.1 1.8 1.2 1.8 1.2 1 1.8 2.8 1.3 3.5 1 .1-.8.4-1.3.7-1.6-2.6-.3-5.3-1.3-5.3-5.7 0-1.3.5-2.3 1.2-3.1-.1-.3-.5-1.5.1-3.1 0 0 1-.3 3.3 1.2a11.5 11.5 0 016 0C17 4.6 18 4.9 18 4.9c.6 1.6.2 2.8.1 3.1.8.8 1.2 1.8 1.2 3.1 0 4.4-2.7 5.4-5.3 5.7.4.4.8 1.1.8 2.2v3.3c0 .3.2.6.8.5 4.6-1.5 7.9-5.8 7.9-10.9C23.5 5.7 18.3.5 12 .5z"/></svg>Star</a>
+</div></div></header>
+
+<div class="wrap">
+  <section class="hero">
+    <span class="tag"><span class="pulse"></span> Air-gapped · Multi-cloud · Deterministic</span>
+    <h1>Catch cloud IAM privilege escalation<br><span class="grad">before it ships — on your own metal.</span></h1>
+    <p class="sub">Deterministic AWS, Azure &amp; GCP IAM auditing — zero LLM hallucinations, reproducible audit trails, and a native IDE MCP server for Cursor &amp; Claude Code. Runs 100% offline.</p>
+    <div class="cta">
+      <a class="btn primary" href="https://github.com/YOUR-USERNAME/iam-sentinel">⭐ Star on GitHub</a>
+      <a class="btn" href="#install">Quickstart →</a>
+    </div>
+
+    <div class="osstrip">
+      <div class="cap">Runs on every OS</div>
+      <div class="oslist">
+        <div class="os"><svg><use href="#os-apple"/></svg><span class="name">macOS</span><span class="note">Intel &amp; Apple&nbsp;Silicon</span></div>
+        <div class="os"><svg><use href="#os-windows"/></svg><span class="name">Windows</span><span class="note">Docker Desktop</span></div>
+        <div class="os"><svg><use href="#os-linux"/></svg><span class="name">Linux</span><span class="note">Docker Engine</span></div>
+        <div class="os"><svg><use href="#os-wsl"/></svg><span class="name">WSL</span><span class="note">Ubuntu on Windows</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="grid g3" id="features">
+    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>100% on-prem &amp; air-gapped</h3><p>Zero outbound telemetry. Your IAM policies, findings, and compliance logs never leave your private network.</p></div>
+    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div><h3>Ground-truth deterministic engine</h3><p>Findings come from structural rule packs — version-stamped, auditable, reproducible. Not an LLM guess.</p></div>
+    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div><h3>Native IDE integration (MCP)</h3><p>A stdio JSON-RPC MCP server puts automated security checks inside Cursor &amp; Claude Code as code is written.</p></div>
+  </section>
+
+  <section class="section" id="install">
+    <h2>Install in 3 steps — any OS</h2>
+    <p class="lead">Works anywhere Docker runs. A GPU is optional — only for the written remediation narrative.</p>
+    <div class="terminal">
+      <div class="tbar"><span class="tdot r"></span><span class="tdot y"></span><span class="tdot g"></span><span class="ttitle">bash — iam-sentinel</span></div>
+      <div class="tbody">
+        <div><span class="n">1</span><span class="kw">git clone</span> <span class="cmd">https://github.com/YOUR-USERNAME/iam-sentinel</span> &amp;&amp; <span class="kw">cd</span> iam-sentinel</div>
+        <div><span class="n">2</span><span class="cmd">cp .env.example .env</span>  <span class="c"># set API keys (+ LICENSE_KEY if you have one)</span></div>
+        <div><span class="n">3</span><span class="cmd">docker compose up -d --build</span></div>
+        <div><span class="n">&nbsp;</span><span class="ok">→ open http://127.0.0.1:8080  ·  health: /api/health  ·  dashboard included</span></div>
+      </div>
+    </div>
+    <div class="osnote">
+      <span class="chip"><svg><use href="#os-apple"/></svg> macOS</span>
+      <span class="chip"><svg><use href="#os-windows"/></svg> Windows (no NVIDIA)</span>
+      <span>→ set <code>LLM_NARRATIVE_ENABLED=false</code> for the CPU-only deterministic core (you still get every finding).</span>
+    </div>
+    <div class="osnote">
+      <span class="chip"><svg><use href="#os-linux"/></svg> Linux</span>
+      <span class="chip"><svg><use href="#os-wsl"/></svg> WSL + NVIDIA</span>
+      <span>→ full stack including the local model. Per-OS steps in <code>INSTALL.md</code>.</span>
+    </div>
+  </section>
+
+  <section class="section" id="pricing">
+    <h2>Pricing</h2>
+    <p class="lead">Open-core: run it free, upgrade for seats, history &amp; enterprise controls. Licensing is enforced offline via Ed25519 signatures.</p>
+    <div class="grid price">
+      <div class="card plan">
+        <h3>Community</h3><div class="amt">Free</div>
+        <ul>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><b>1</b> seat</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><b>100</b> scans / month</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>AWS · Azure · GCP engines</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Native IDE MCP server</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Audit trail</li>
+        </ul>
+        <a class="btn" href="#install">Get started</a>
+      </div>
+      <div class="card plan pop"><span class="pill">MOST POPULAR</span>
+        <h3>Team</h3><div class="amt">$199 <small>/ month</small></div>
+        <ul>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><b>10</b> seats</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><b>5,000</b> scans / month</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Cross-run remediation diff</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>SHA-256 provenance</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Everything in Community</li>
+        </ul>
+        <a class="btn primary" href="mailto:you@example.com?subject=IAM%20Sentinel%20Team">Start Team</a>
+      </div>
+      <div class="card plan">
+        <h3>Enterprise</h3><div class="amt">$4,999 <small>/ year</small></div>
+        <ul>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg><b>Unlimited</b> seats &amp; scans</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>SSO (OIDC) + RBAC</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Built-in TLS</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Air-gapped licensing</li>
+          <li><svg fill="none" stroke-width="2.5" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>Priority SLA</li>
+        </ul>
+        <a class="btn" href="mailto:you@example.com?subject=IAM%20Sentinel%20Enterprise">Contact sales</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <h2>Capability matrix</h2>
+    <p class="lead">Entitlements are enforced offline — no phone-home.</p>
+    <table>
+      <tr><th>Capability</th><th>Community</th><th>Team</th><th>Enterprise</th></tr>
+      <tr><td>Deterministic AWS / Azure / GCP detection</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Native IDE MCP server</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Audit trail &amp; SHA-256 provenance</td><td class="yes">✓</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>Cross-run remediation diff</td><td class="no">—</td><td class="yes">✓</td><td class="yes">✓</td></tr>
+      <tr><td>SSO (OIDC) + RBAC</td><td class="no">—</td><td class="no">—</td><td class="yes">✓</td></tr>
+      <tr><td>Seats · Scans/mo</td><td>1 · 100</td><td>10 · 5,000</td><td>∞ · ∞</td></tr>
+    </table>
+  </section>
+
+  <section class="section" id="faq">
+    <h2>FAQ</h2>
+    <div class="grid g3">
+      <div class="card"><h3>Does any data leave our network?</h3><p>No. No outbound calls except to your own optional local model. Zero telemetry.</p></div>
+      <div class="card"><h3>Do we need a GPU?</h3><p>No. Findings are deterministic and CPU-only. A GPU only powers the optional prose remediation.</p></div>
+      <div class="card"><h3>Is it really deterministic?</h3><p>Yes — findings come from a structural rule engine, version-stamped and reproducible. The LLM only explains verified findings.</p></div>
+      <div class="card"><h3>How is licensing enforced?</h3><p>An offline Ed25519-signed key in <code>.env</code>, verified against a bundled public key. Tampering breaks it; the app fails safe.</p></div>
+      <div class="card"><h3>Which clouds?</h3><p>AWS, Azure &amp; GCP IAM/RBAC today — auto-detected. The finding schema is provider-agnostic.</p></div>
+      <div class="card"><h3>How do I deploy?</h3><p>One <code>docker compose up</code>. Full per-OS steps (Mac/Win/Linux/WSL) in <code>INSTALL.md</code>.</p></div>
+    </div>
+    <div class="cta" style="margin-top:36px">
+      <a class="btn primary" href="https://github.com/YOUR-USERNAME/iam-sentinel">⭐ Star it on GitHub</a>
+      <a class="btn" href="mailto:you@example.com?subject=IAM%20Sentinel%20Pilot">Request a pilot</a>
+    </div>
+  </section>
+
+  <footer>
+    IAM Sentinel · Deterministic multi-cloud IAM security auditor. Runs fully offline with zero data egress.<br>
+    <span style="font-size:.78rem;opacity:.8">Before deploying, replace <code style="background:#0a0f1c;padding:1px 5px;border-radius:4px">YOUR-USERNAME</code> and <code style="background:#0a0f1c;padding:1px 5px;border-radius:4px">you@example.com</code> in this file.</span>
+  </footer>
+</div>
+</body>
+</html>
