@@ -157,7 +157,7 @@
 
 <div class="wrap">
   <section class="hero">
-    <span class="tag"><span class="pulse"></span> Air-gapped · Multi-cloud · Deterministic</span>
+    <span class="tag"><span class="pulse"></span> Air-gapped · Multi-cloud · DevSecOps CI/CD PR Gate · 68+ Tests Passing</span>
     <h1>Catch cloud IAM privilege escalation<br><span class="grad">before it ships — on your own metal.</span></h1>
     <p class="sub">Deterministic AWS, Azure &amp; GCP IAM auditing — zero LLM hallucinations, reproducible audit trails, and a native IDE MCP server for Cursor &amp; Claude Code. Runs 100% offline.</p>
     <div class="cta">
@@ -176,10 +176,35 @@
     </div>
   </section>
 
-  <section class="grid g3" id="features">
-    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>100% on-prem &amp; air-gapped</h3><p>Zero outbound telemetry. Your IAM policies, findings, and compliance logs never leave your private network.</p></div>
-    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div><h3>Ground-truth deterministic engine</h3><p>Findings come from structural rule packs — version-stamped, auditable, reproducible. Not an LLM guess.</p></div>
-    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div><h3>Native IDE integration (MCP)</h3><p>A stdio JSON-RPC MCP server puts automated security checks inside Cursor &amp; Claude Code as code is written.</p></div>
+    <section class="grid g3" id="features">
+    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>100% On-Prem &amp; Air-Gapped</h3><p>Zero outbound telemetry. Your IAM policies, findings, and compliance logs never leave your private network.</p></div>
+    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M9 12l2 2 4-4"/><circle cx="12" cy="12" r="9"/></svg></div><h3>Ground-Truth Deterministic Engine</h3><p>Findings come from structural rule packs — version-stamped, auditable, reproducible. Not an LLM guess.</p></div>
+    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg></div><h3>Native IDE Integration (MCP)</h3><p>A stdio JSON-RPC MCP server puts automated security checks inside Cursor &amp; Claude Code as code is written.</p></div>
+    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M16 18l6-6-6-6M8 6l-6 6 6 6"/></svg></div><h3>DevSecOps CI/CD PR Gate</h3><p>Drop-in GitHub Action (<code>uses: Pratikchandrathakur/IAM-Sentinel@v1</code>). Pulls IAM from <code>terraform show -json</code> and blocks dangerous merges via SARIF &amp; Markdown PR summaries.</p></div>
+    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg></div><h3>100% Offline Remediation</h3><p>Zero model / Ollama required. Every scan returns an instant deterministic remediation report + least-privilege policy skeleton with zero external dependencies.</p></div>
+    <div class="card"><div class="ci"><svg fill="none" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg></div><h3>Config-Driven Custom Rules</h3><p>Add custom organizational rule definitions using simple JSON configs (<code>custom_rules.example.json</code>) without altering codebase logic.</p></div>
+  </section>
+
+  <section class="section" id="cicd">
+    <h2>Drop-in GitHub Action CI/CD Guardrail</h2>
+    <p class="lead">Block dangerous IAM privilege-escalation in Terraform plans or policy JSON files on every Pull Request.</p>
+    <div class="terminal">
+      <div class="tbar"><span class="tdot r"></span><span class="tdot y"></span><span class="tdot g"></span><span class="ttitle">.github/workflows/iam-security.yml</span></div>
+      <div class="tbody">
+        <div><span class="kw">name:</span> <span class="cmd">"IAM Security PR Guardrail"</span></div>
+        <div><span class="kw">on:</span> <span class="cmd">[pull_request]</span></div>
+        <div><span class="kw">jobs:</span></div>
+        <div><span class="n">&nbsp;&nbsp;</span><span class="kw">iam-guardrails:</span></div>
+        <div><span class="n">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="kw">runs-on:</span> <span class="cmd">ubuntu-latest</span></div>
+        <div><span class="n">&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="kw">steps:</span></div>
+        <div><span class="n">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="kw">- uses:</span> <span class="cmd">actions/checkout@v4</span></div>
+        <div><span class="n">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="kw">- name:</span> <span class="cmd">Run IAM Sentinel PR Gate</span></div>
+        <div><span class="n">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="kw">uses:</span> <span class="ok">Pratikchandrathakur/IAM-Sentinel@v1</span></div>
+        <div><span class="n">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="kw">with:</span></div>
+        <div><span class="n">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="kw">tfplan:</span> <span class="cmd">"tfplan.json"</span>  <span class="c"># or paths: "policies/*.json"</span></div>
+        <div><span class="n">&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;</span><span class="kw">fail-on:</span> <span class="cmd">"HIGH"</span>       <span class="c"># fails PR if HIGH or CRITICAL findings exist</span></div>
+      </div>
+    </div>
   </section>
 
   <section class="section" id="install">

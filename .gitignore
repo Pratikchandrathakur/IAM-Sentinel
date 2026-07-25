@@ -20,3 +20,4 @@ update_script.py
 *.zip
 sync_readme.py
 update_md.py
+update_landing_v2.py
