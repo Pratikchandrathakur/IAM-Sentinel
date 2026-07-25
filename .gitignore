@@ -23,3 +23,9 @@ update_md.py
 update_landing_v2.py
 full guide.md
 FULL_GUIDE.md
+restore_valid_key.py
+test_all_audits.py
+test_audit_api.py
+test_mcp_run.py
+test_tfplan.json
+test_tiers_ui_sync.py
