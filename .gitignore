@@ -6,3 +6,18 @@ __pycache__/
 venv/
 *.Zone.Identifier
 .DS_Store
+
+# Vendor-only files (NEVER upload/commit to public repo)
+vendor_private.key
+vendor_license_generator.py
+license_verifier.py
+LICENSING.md
+BUSINESS.md
+PUBLISH.md
+REPO_README.md
+build_release.py
+update_script.py
+tests/
+*.zip
+sync_readme.py
+update_md.py

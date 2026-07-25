@@ -1,5 +1,3 @@
-<!-- Rename this file to README.md in your public GitHub repo.
-     Replace YOUR-USERNAME and the landing-page URL before pushing. -->
 
 <h1 align="center">🛡️ IAM Sentinel</h1>
 
@@ -17,7 +15,7 @@
 </p>
 
 <p align="center">
-  <a href="https://iam-sentinel.vercel.app">Website</a> ·
+  <a href="https://iam-sentinel-site.vercel.app">Website</a> ·
   <a href="#quickstart">Quickstart</a> ·
   <a href="INSTALL.md">Install (Mac/Win/Linux/WSL)</a> ·
   <a href="#pricing">Pricing</a>
@@ -41,7 +39,7 @@ rule engine** — reproducible and auditable, not an LLM guess — entirely on y
 ## Quickstart
 
 ```bash
-git clone https://github.com/YOUR-USERNAME/iam-sentinel && cd iam-sentinel
+git clone https://github.com/Pratikchandrathakur/IAM-Sentinel && cd iam-sentinel
 cp .env.example .env          # set API keys (Community tier needs no license)
 docker compose up -d --build
 open http://127.0.0.1:8080     # dashboard · API at /api/... · health at /api/health
@@ -85,7 +83,7 @@ Open-core. Run it free; upgrade for seats, history, and enterprise controls (off
 | Team | $199/mo | 10 | 5,000 | Remediation diff |
 | Enterprise | $4,999/yr | ∞ | ∞ | SSO/RBAC · TLS · SLA |
 
-See the [website](https://iam-sentinel.vercel.app) or email **you@example.com** for a pilot.
+See the [website](https://iam-sentinel-site.vercel.app) or email **krisprogrammer1@gmail.com** for a pilot.
 
 ## Tests
 
