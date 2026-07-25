@@ -22,11 +22,18 @@ inputs:
     description: "SARIF output file (upload it with github/codeql-action/upload-sarif)."
     required: false
     default: "iam-sentinel.sarif"
+  comment-file:
+    description: "Path to output Markdown PR comment summary table."
+    required: false
+    default: "iam-sentinel-comment.md"
 
 outputs:
   sarif:
     description: "Path to the generated SARIF file."
     value: ${{ inputs.output }}
+  comment-file:
+    description: "Path to the generated Markdown PR comment file."
+    value: ${{ inputs.comment-file }}
 
 runs:
   using: "composite"
@@ -41,9 +48,9 @@ runs:
         args=""
         [ -n "${{ inputs.tfplan }}" ] && args="$args --tfplan ${{ inputs.tfplan }}"
         [ -n "${{ inputs.paths }}" ] && args="$args ${{ inputs.paths }}"
-        # SARIF file for the Security tab...
+        # SARIF file for GitHub Code Scanning annotations...
         python "${{ github.action_path }}/guardrails.py" $args --fail-on "${{ inputs.fail-on }}" --format sarif > "${{ inputs.output }}"
         code=$?
-        # ...and a human-readable summary in the job log.
-        python "${{ github.action_path }}/guardrails.py" $args --fail-on "${{ inputs.fail-on }}" --format text || true
+        # Markdown summary table for PR comments and GitHub Job Summary...
+        python "${{ github.action_path }}/guardrails.py" $args --fail-on "${{ inputs.fail-on }}" --comment-file "${{ inputs.comment-file }}" --format text || true
         exit $code

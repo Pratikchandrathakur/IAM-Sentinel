@@ -103,6 +103,20 @@ class TestGuardrailsGate(unittest.TestCase):
         self.assertEqual(doc["version"], "2.1.0")
         self.assertTrue(doc["runs"][0]["results"])
 
+    def test_markdown_output_and_comment_file(self):
+        with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
+            json.dump(AWS_BAD, f); path = f.name
+        comment_file = path + ".md"
+        r = self._run([path, "--format", "markdown", "--comment-file", comment_file, "--fail-on", "HIGH"])
+        self.assertEqual(r.returncode, 1)
+        self.assertIn("IAM Sentinel Guardrails Audit Report", r.stdout)
+        self.assertIn("| Status | Provider | Policy / Resource |", r.stdout)
+        self.assertTrue(os.path.exists(comment_file))
+        with open(comment_file, "r") as cf:
+            self.assertIn("IAM Sentinel Guardrails Audit Report", cf.read())
+        os.remove(comment_file)
+
+
 
 class TestRemediation(unittest.TestCase):
     def test_report_lists_fixes_no_llm(self):
