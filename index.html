@@ -449,7 +449,8 @@
         <svg width="18" height="18" fill="none" stroke="white" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg>
       </div>
       IAM Sentinel
-      <span class="badge-pill">v1.0.0 Enterprise</span>
+      <span class="badge-pill" id="licenseBadge" style="transition: all 0.3s ease;">v1.0.0</span>
+      <span class="badge-pill" id="licenseDetailPill" style="font-size:0.75rem; background:rgba(255,255,255,0.05); color:var(--text-muted);">Community Tier</span>
     </div>
 
     <div class="nav-actions">
@@ -559,8 +560,14 @@
         <button class="modal-close-btn" onclick="closeRulesModal()">&times;</button>
       </div>
       <div class="modal-main">
-        <div style="display: flex; gap: 0.75rem; align-items: center;">
-          <input type="text" id="ruleSearch" style="flex:1;" placeholder="🔍 Filter AWS, Azure, GCP rules..." oninput="filterRules()" />
+        <div style="display: flex; gap: 0.75rem; align-items: center; margin-bottom: 0.75rem; flex-wrap: wrap;">
+          <input type="text" id="ruleSearch" style="flex:1; min-width: 200px;" placeholder="🔍 Filter AWS, Azure, GCP rules..." oninput="filterRules()" />
+          <div style="display: flex; gap: 0.25rem; background: rgba(255,255,255,0.05); padding: 0.2rem; border-radius: 0.5rem;">
+            <button class="btn-preset active-cloud-btn" id="btnCloudALL" style="font-size:0.75rem; padding:0.25rem 0.6rem; border-radius:0.35rem;" onclick="setCloudFilter('all')">ALL</button>
+            <button class="btn-preset" id="btnCloudAWS" style="font-size:0.75rem; padding:0.25rem 0.6rem; border-radius:0.35rem;" onclick="setCloudFilter('aws')">AWS</button>
+            <button class="btn-preset" id="btnCloudAZURE" style="font-size:0.75rem; padding:0.25rem 0.6rem; border-radius:0.35rem;" onclick="setCloudFilter('azure')">AZURE</button>
+            <button class="btn-preset" id="btnCloudGCP" style="font-size:0.75rem; padding:0.25rem 0.6rem; border-radius:0.35rem;" onclick="setCloudFilter('gcp')">GCP</button>
+          </div>
           <span class="badge-pill" id="rulesetBadge">iam-2026.07</span>
         </div>
         <div class="rule-card-grid" id="ruleGrid"></div>
@@ -657,13 +664,80 @@
       });
     }
 
+    let selectedCloud = 'all';
+
+    function setCloudFilter(cloud) {
+      selectedCloud = cloud;
+      ['ALL', 'AWS', 'AZURE', 'GCP'].forEach(c => {
+        const btn = document.getElementById('btnCloud' + c);
+        if (btn) {
+          if (c.toLowerCase() === cloud) {
+            btn.style.background = 'var(--primary)';
+            btn.style.color = '#fff';
+          } else {
+            btn.style.background = 'transparent';
+            btn.style.color = 'var(--text-muted)';
+          }
+        }
+      });
+      filterRules();
+    }
+
     function filterRules() {
-      const q = document.getElementById('ruleSearch').value.toLowerCase();
-      const filtered = cachedRules.filter(r => 
-        r.id.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || r.actions.some(a => a.toLowerCase().includes(q))
-      );
+      const q = (document.getElementById('ruleSearch').value || '').toLowerCase();
+      const filtered = cachedRules.filter(r => {
+        const matchesCloud = selectedCloud === 'all' || (r.provider && r.provider.toLowerCase() === selectedCloud);
+        const matchesQuery = !q || r.id.toLowerCase().includes(q) || r.name.toLowerCase().includes(q) || (r.actions && r.actions.some(a => a.toLowerCase().includes(q)));
+        return matchesCloud && matchesQuery;
+      });
       renderRules(filtered);
     }
+
+    async function updateLicenseBadge() {
+      const apiKey = document.getElementById('apiKey').value.trim();
+      const badge = document.getElementById('licenseBadge');
+      const detailPill = document.getElementById('licenseDetailPill');
+      if (!badge) return;
+
+      try {
+        const resp = await fetch('/api/license', {
+          headers: apiKey ? { 'X-API-Key': apiKey } : {}
+        });
+        if (resp.ok) {
+          const lic = await resp.json();
+          const plan = (lic.plan || 'community').toLowerCase();
+          const seatsDisp = lic.seats_display || lic.seats || 1;
+          const scansDisp = lic.scans_display || lic.max_scans_per_month || 100;
+
+          if (plan === 'enterprise') {
+            badge.innerHTML = '👑 Enterprise';
+            badge.style.background = 'linear-gradient(135deg, #a855f7, #ec4899)';
+            badge.style.color = '#fff';
+            if (detailPill) detailPill.innerText = `Enterprise Tier · Unlimited Seats & Scans`;
+          } else if (plan === 'team') {
+            badge.innerHTML = '⚡ Team';
+            badge.style.background = '#10b981';
+            badge.style.color = '#fff';
+            if (detailPill) detailPill.innerText = `Team Tier · ${seatsDisp} Seats · ${scansDisp} Scans/mo`;
+          } else {
+            badge.innerHTML = 'Community';
+            badge.style.background = 'rgba(255,255,255,0.1)';
+            badge.style.color = 'var(--text-muted)';
+            if (detailPill) detailPill.innerText = `Community Tier · ${seatsDisp} Seat · ${scansDisp} Scans/mo`;
+          }
+        }
+      } catch (err) {
+        console.warn('License fetch error:', err);
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      updateLicenseBadge();
+      const keyInput = document.getElementById('apiKey');
+      if (keyInput) {
+        keyInput.addEventListener('input', updateLicenseBadge);
+      }
+    });
 
     async function runAudit() {
       const policyStr = document.getElementById('policyInput').value.trim();

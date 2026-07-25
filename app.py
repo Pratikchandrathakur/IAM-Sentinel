@@ -163,11 +163,34 @@ def readyz():
 @app.get("/api/rules")
 def rules():
     aws_rules = [{"id": p["id"], "name": p["name"], "actions": p["actions"], "provider": p.get("provider", "aws")} for p in ESCALATION_PRIMITIVES]
+    azure_rules = [
+        {"id": "AZ.WILDCARD_ACTION_ALL", "name": "Role grants ALL control-plane actions (actions: \"*\")", "actions": ["actions: *"], "provider": "azure"},
+        {"id": "AZ.WILDCARD_DATAACTION_ALL", "name": "Role grants ALL data-plane actions (dataActions: \"*\")", "actions": ["dataActions: *"], "provider": "azure"},
+        {"id": "AZ.NOTACTIONS_TRAP", "name": "actions:* softened only by notActions", "actions": ["notActions"], "provider": "azure"},
+        {"id": "AZ.ESC_ROLE_ASSIGNMENT_WRITE", "name": "Grant role assignments to any identity", "actions": ["Microsoft.Authorization/roleAssignments/write"], "provider": "azure"},
+        {"id": "AZ.ESC_AUTHORIZATION_ALL", "name": "Full access to authorization subsystem", "actions": ["Microsoft.Authorization/*"], "provider": "azure"},
+        {"id": "AZ.ESC_ELEVATE_ACCESS", "name": "Elevate access to User Access Administrator", "actions": ["Microsoft.Authorization/elevateAccess/action"], "provider": "azure"},
+        {"id": "AZ.ESC_ROLE_DEFINITION_WRITE", "name": "Modify or create custom role definitions", "actions": ["Microsoft.Authorization/roleDefinitions/write"], "provider": "azure"},
+        {"id": "AZ.ESC_MANAGED_IDENTITY_ASSIGN", "name": "Assign user-assigned managed identities", "actions": ["Microsoft.ManagedIdentity/userAssignedIdentities/*/assign/action"], "provider": "azure"},
+        {"id": "AZ.ESC_DEPLOYMENTS_WRITE", "name": "Execute ARM template deployments", "actions": ["Microsoft.Resources/deployments/write"], "provider": "azure"},
+        {"id": "AZ.SCOPE_ROOT", "name": "Role assignable at tenant root scope (\"/\")", "actions": ["assignableScopes: /"], "provider": "azure"},
+        {"id": "AZ.SCOPE_SUBSCRIPTION", "name": "Role assignable across an entire subscription", "actions": ["assignableScopes: /subscriptions/*"], "provider": "azure"},
+    ]
+    gcp_rules = [
+        {"id": "GCP.PUBLIC_MEMBER", "name": "Role granted to the public (allUsers)", "actions": ["members: allUsers"], "provider": "gcp"},
+        {"id": "GCP.PRIMITIVE_ROLE", "name": "Primitive role in use (roles/owner, roles/editor)", "actions": ["roles/owner", "roles/editor"], "provider": "gcp"},
+        {"id": "GCP.ESC_ROLE", "name": "Privilege-escalation role", "actions": ["roles/iam.serviceAccountTokenCreator", "roles/iam.serviceAccountKeyAdmin", "roles/iam.securityAdmin"], "provider": "gcp"},
+        {"id": "GCP.ESC_PERMISSION", "name": "Escalation-enabling permission", "actions": ["iam.serviceAccounts.actAs", "iam.serviceAccounts.getAccessToken"], "provider": "gcp"},
+        {"id": "GCP.WILDCARD_PERMISSION", "name": "Wildcard permission in custom role", "actions": ["*"], "provider": "gcp"},
+    ]
+    all_rules = aws_rules + azure_rules + gcp_rules
     return {
         "ruleset_version": config.RULESET_VERSION,
         "providers": list(PROVIDERS),
         "aws_escalation_primitives": aws_rules,
-        "escalation_primitives": aws_rules,
+        "azure_escalation_primitives": azure_rules,
+        "gcp_escalation_primitives": gcp_rules,
+        "escalation_primitives": all_rules,
     }
 
 
