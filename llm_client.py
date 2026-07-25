@@ -1,8 +1,16 @@
 import time
 import logging
-import requests
-from openai import OpenAI
 import config
+
+try:
+    import requests
+except ImportError:
+    requests = None
+
+try:
+    from openai import OpenAI
+except ImportError:
+    OpenAI = None
 
 log = logging.getLogger("cyberengine.llm")
 
@@ -27,6 +35,8 @@ class LLMClient:
         self.backend = backend.lower()
         self.vllm_client = None
         if self.backend == "vllm":
+            if OpenAI is None:
+                raise LLMUnavailable("openai package is not installed for vLLM backend.")
             self.vllm_client = OpenAI(base_url=config.VLLM_API_URL, api_key="not-needed")
 
     def query(self, prompt: str, system_prompt: str = None, model: str = None,
@@ -48,6 +58,8 @@ class LLMClient:
         raise LLMUnavailable(f"{what} failed after {config.LLM_MAX_RETRIES + 1} attempts: {last_err}")
 
     def _query_ollama(self, prompt, system_prompt=None, model=None, temperature=0.1) -> str:
+        if requests is None:
+            raise LLMUnavailable("requests library not installed.")
         target_model = model or config.DEFAULT_OLLAMA_MODEL
         messages = []
         if system_prompt:
@@ -65,7 +77,6 @@ class LLMClient:
             resp = requests.post(config.OLLAMA_CHAT_URL, json=payload, timeout=config.LLM_TIMEOUT_SECONDS)
             if resp.status_code == 200:
                 return resp.json().get("message", {}).get("content", "")
-            # Fall back to the /generate endpoint for older Ollama builds.
             gen_payload = {
                 "model": target_model,
                 "prompt": f"{system_prompt}\n\n{prompt}" if system_prompt else prompt,
@@ -79,6 +90,8 @@ class LLMClient:
         return self._with_retries(_call, f"ollama[{target_model}]")
 
     def _query_vllm(self, prompt, system_prompt=None, model=None, stream=False, temperature=0.1):
+        if self.vllm_client is None:
+            raise LLMUnavailable("vllm_client is not initialized.")
         target_model = model or config.DEFAULT_VLLM_MODEL
         messages = []
         if system_prompt:
