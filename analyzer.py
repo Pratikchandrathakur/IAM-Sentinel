@@ -12,6 +12,7 @@ The deterministic result is the product; the narrative is polish.
 import json
 
 import config
+import remediation
 from findings import sha256_hex, utc_now_iso
 from providers import analyze_policy
 from llm_client import LLMClient, LLMUnavailable
@@ -52,12 +53,17 @@ def analyze(policy_data: dict, target: str = "pasted policy", model: str = None,
     scan.scanned_at = utc_now_iso()
     scan.artifact_sha256 = sha256_hex(policy_str)
 
+    # BASELINE: a deterministic remediation report — always available, zero dependencies.
+    # The optional LLM narrative only *replaces* this when a model is enabled and reachable.
+    deterministic_report = remediation.build_report(scan, provider=resolved_provider)
+
     iac = {"aws": "an `aws_iam_policy` (Terraform)", "azure": "an `azurerm_role_definition` (Terraform)",
            "gcp": "a `google_project_iam_custom_role` / binding (Terraform)"}.get(resolved_provider,
                                                                                    "the appropriate IaC")
     llm_ok = True
     if not config.LLM_NARRATIVE_ENABLED:
-        narrative, llm_ok = LLM_DISABLED_NOTICE, True
+        # No model required — the deterministic report IS the remediation.
+        narrative, llm_ok = deterministic_report, True
     else:
         prompt = (
             f"{resolved_provider.upper()} IAM/RBAC policy under review:\n```json\n{policy_str}\n```\n\n"
@@ -75,10 +81,11 @@ def analyze(policy_data: dict, target: str = "pasted policy", model: str = None,
             narrative = LLMClient(backend=backend).query(
                 prompt=prompt, model=model, system_prompt=GROUNDED_SYSTEM_PROMPT)
         except LLMUnavailable:
-            narrative, llm_ok = LLM_UNAVAILABLE_NOTICE, False
+            # Fall back to the deterministic report — never a bare error string.
+            narrative, llm_ok = deterministic_report, False
 
     if structured:
-        return {"scan": scan.to_dict(), "report": narrative,
+        return {"scan": scan.to_dict(), "report": narrative, "deterministic_report": deterministic_report,
                 "llm_narrative_ok": llm_ok, "provider": resolved_provider}
     return narrative
 

@@ -1,0 +1,15 @@
+{
+  "_comment": "Copy to custom_rules.json (or set CUSTOM_RULES_FILE) to add your own AWS escalation rules with NO code change. Each entry fires when ALL its actions are grantable.",
+  "escalation_primitives": [
+    {
+      "id": "IAM.ESC_CUSTOM_SSM_RUNCOMMAND",
+      "actions": ["ssm:SendCommand", "ec2:DescribeInstances"],
+      "name": "Run arbitrary commands on EC2 via SSM (lateral movement)"
+    },
+    {
+      "id": "IAM.ESC_CUSTOM_SECRETS_ADMIN",
+      "actions": ["secretsmanager:PutSecretValue", "secretsmanager:GetSecretValue"],
+      "name": "Read and overwrite application secrets"
+    }
+  ]
+}

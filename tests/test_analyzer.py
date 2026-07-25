@@ -50,7 +50,9 @@ class TestAnalyzer(unittest.TestCase):
         res = analyzer.analyze(policy, structured=True)
         self.assertFalse(res["llm_narrative_ok"])
         self.assertGreaterEqual(res["scan"]["finding_count"], 2)
-        self.assertIn("unavailable", res["report"].lower())
+        # On LLM outage the report falls back to the deterministic remediation (never empty).
+        self.assertIn("IAM.ESC_PASSROLE_EC2", res["report"])
+        self.assertIn("Remediation Report", res["report"])
 
     def test_provenance_stamped(self):
         analyzer, config = self._analyzer_with_llm(raises=False)
@@ -77,7 +79,9 @@ class TestAnalyzer(unittest.TestCase):
         importlib.reload(analyzer)
         res = analyzer.analyze({"Statement": [{"Effect": "Allow", "Action": "*", "Resource": "*"}]},
                                structured=True)
-        self.assertIn("disabled", res["report"].lower())
+        # With no model, the report IS the deterministic remediation — fully useful offline.
+        self.assertIn("Remediation Report", res["report"])
+        self.assertTrue(res["llm_narrative_ok"])
         self.assertGreaterEqual(res["scan"]["finding_count"], 1)
 
 

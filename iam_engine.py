@@ -76,6 +76,34 @@ EXFIL_ACTIONS = [
 FULL_ADMIN_ACTIONS = ["*", "iam:*", "sts:*"]
 
 
+def _load_custom_primitives() -> None:
+    """Append customer/vendor-defined escalation rules from a JSON file — no code change.
+
+    Set CUSTOM_RULES_FILE, or drop a `custom_rules.json` next to this module. Format:
+      {"escalation_primitives": [{"id": "IAM.ESC_MY_RULE", "actions": ["svc:Action1","svc:Action2"],
+                                  "name": "human description"}]}
+    This makes "custom rules" a config drop-in instead of an engineering task.
+    """
+    import json as _json
+    import os as _os
+    path = _os.getenv("CUSTOM_RULES_FILE", _os.path.join(_os.path.dirname(__file__), "custom_rules.json"))
+    if not _os.path.exists(path):
+        return
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = _json.load(f)
+        for e in data.get("escalation_primitives", []):
+            if e.get("id") and e.get("actions"):
+                ESCALATION_PRIMITIVES.append(
+                    {"id": e["id"], "actions": list(e["actions"]), "name": e.get("name", e["id"])})
+    except Exception as _e:  # never let a bad custom-rules file break the engine
+        import logging
+        logging.getLogger("iam-sentinel.engine").warning("custom rules not loaded: %s", _e)
+
+
+_load_custom_primitives()
+
+
 def _as_list(v: Any) -> list:
     if v is None:
         return []

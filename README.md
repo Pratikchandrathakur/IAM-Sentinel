@@ -1,3 +1,5 @@
+<!-- Rename this file to README.md in your public GitHub repo.
+     Replace Pratikchandrathakur and the landing-page URL before pushing. -->
 
 <h1 align="center">🛡️ IAM Sentinel</h1>
 
@@ -11,7 +13,8 @@
   <img alt="docker" src="https://img.shields.io/badge/docker-compose-2496ED?logo=docker&logoColor=white">
   <img alt="clouds" src="https://img.shields.io/badge/clouds-AWS%20%7C%20Azure%20%7C%20GCP-orange">
   <img alt="offline" src="https://img.shields.io/badge/network-air--gapped-10b981">
-  <img alt="tests" src="https://img.shields.io/badge/tests-57%20passing-brightgreen">
+  <img alt="tests" src="https://img.shields.io/badge/tests-68%20passing-brightgreen">
+  <img alt="ci" src="https://img.shields.io/badge/CI-PR%20gate%20%2B%20SARIF-6d7dff">
 </p>
 
 <p align="center">
@@ -64,6 +67,30 @@ Full per-OS steps in **[INSTALL.md](INSTALL.md)**.
 }}}
 ```
 Then ask your assistant: *"Audit this IAM policy with iam-sentinel."*
+
+## CI/CD guardrails — block privilege escalation on every PR
+
+Scan the IAM inside a Terraform plan (or raw policy files) and **fail the build** when a new
+escalation path appears. Findings show inline on the PR via SARIF. No server needed.
+
+```yaml
+# .github/workflows/iam-guardrails.yml  (see examples/github-actions/)
+- run: terraform show -json tf.plan > plan.json
+- uses: Pratikchandrathakur/IAM-Sentinel@v1
+  with: { tfplan: plan.json, fail-on: HIGH }
+```
+
+Or run the gate locally / in any CI (pure stdlib, offline):
+```bash
+python3 guardrails.py --tfplan plan.json --fail-on HIGH     # exit 1 = blocking findings
+python3 guardrails.py policies/*.json --format sarif > iam.sarif
+```
+It **extracts IAM from Terraform plans** (AWS `aws_iam_policy`/roles, Azure `azurerm_role_definition`,
+GCP custom roles/bindings) — no HCL parsing, using the resolved plan JSON.
+
+> **No model required.** Every scan returns a full **deterministic remediation report** (fixes +
+> least-privilege skeleton) with zero external services. The optional local LLM is pure polish.
+> **Custom rules** are a config drop-in — see `custom_rules.example.json` (no code change).
 
 ## What it detects
 

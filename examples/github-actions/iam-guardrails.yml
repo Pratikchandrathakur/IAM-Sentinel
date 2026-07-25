@@ -1,0 +1,53 @@
+# Copy this file into YOUR repo at: .github/workflows/iam-guardrails.yml
+# It fails the PR when Terraform introduces an IAM privilege-escalation path,
+# and shows each finding inline on the PR (GitHub code scanning / Security tab).
+
+name: IAM Guardrails
+
+on:
+  pull_request:
+    paths: [ "**/*.tf", "**/*.json" ]   # trigger when IaC / policies change
+
+permissions:
+  contents: read
+  security-events: write                # required to upload SARIF annotations
+
+jobs:
+  iam-guardrails:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      # --- Produce a Terraform plan as JSON (adjust to your setup) ---
+      - uses: hashicorp/setup-terraform@v3
+      - run: terraform init -input=false
+      - run: terraform plan -out tf.plan -input=false
+      - run: terraform show -json tf.plan > plan.json
+
+      # --- Scan the IAM inside the plan; fail on HIGH+; emit SARIF ---
+      - uses: Pratikchandrathakur/IAM-Sentinel@v1
+        id: iam
+        continue-on-error: true          # let SARIF upload before we fail the job
+        with:
+          tfplan: plan.json
+          fail-on: HIGH
+          output: iam-sentinel.sarif
+
+      - uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: iam-sentinel.sarif
+
+      - name: Enforce the gate
+        if: steps.iam.outcome == 'failure'
+        run: |
+          echo "IAM Sentinel found blocking privilege-escalation findings. See the Security tab."
+          exit 1
+
+  # --- Alternative: scan raw policy JSON files (no Terraform) ---
+  # steps:
+  #   - uses: actions/checkout@v4
+  #   - uses: Pratikchandrathakur/IAM-Sentinel@v1
+  #     with:
+  #       paths: "iam/**/*.json"
+  #       fail-on: CRITICAL

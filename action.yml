@@ -1,0 +1,49 @@
+name: "IAM Sentinel Guardrails"
+description: "Fail the build on IAM privilege-escalation in policies or Terraform plans (AWS/Azure/GCP). Air-gapped, deterministic."
+author: "IAM Sentinel"
+branding:
+  icon: "shield"
+  color: "purple"
+
+inputs:
+  tfplan:
+    description: "Path to `terraform show -json` output (extract IAM from a Terraform plan)."
+    required: false
+    default: ""
+  paths:
+    description: "Space-separated policy JSON files, globs, or directories to scan."
+    required: false
+    default: ""
+  fail-on:
+    description: "Minimum severity that fails the build: CRITICAL | HIGH | MEDIUM | LOW | INFO."
+    required: false
+    default: "HIGH"
+  output:
+    description: "SARIF output file (upload it with github/codeql-action/upload-sarif)."
+    required: false
+    default: "iam-sentinel.sarif"
+
+outputs:
+  sarif:
+    description: "Path to the generated SARIF file."
+    value: ${{ inputs.output }}
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/setup-python@v5
+      with:
+        python-version: "3.11"
+    - name: Run IAM Sentinel guardrails
+      shell: bash
+      run: |
+        set +e
+        args=""
+        [ -n "${{ inputs.tfplan }}" ] && args="$args --tfplan ${{ inputs.tfplan }}"
+        [ -n "${{ inputs.paths }}" ] && args="$args ${{ inputs.paths }}"
+        # SARIF file for the Security tab...
+        python "${{ github.action_path }}/guardrails.py" $args --fail-on "${{ inputs.fail-on }}" --format sarif > "${{ inputs.output }}"
+        code=$?
+        # ...and a human-readable summary in the job log.
+        python "${{ github.action_path }}/guardrails.py" $args --fail-on "${{ inputs.fail-on }}" --format text || true
+        exit $code

@@ -1,0 +1,29 @@
+name: tests
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install deps
+        run: pip install -r requirements.txt
+      - name: Run test suite (57 tests)
+        env:
+          AUTH_ENABLED: "false"
+          LLM_NARRATIVE_ENABLED: "false"
+          DATA_DIR: "/tmp/ci-data"
+        run: |
+          fail=0
+          for t in tests/test_*.py; do
+            echo "== $t =="
+            python "$t" || fail=1
+          done
+          exit $fail
